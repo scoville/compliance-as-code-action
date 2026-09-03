@@ -4,7 +4,7 @@
 > [`drata/compliance-as-code-action`](https://github.com/drata/compliance-as-code-action),
 > forked at upstream `v1.0.1`.
 >
-> **Sole change:** support for `region: APAC`. Upstream's `buildApiUrl` maps only
+> **Change 1 - `region: APAC`.** Upstream's `buildApiUrl` maps only
 > `EU` to a dedicated host and sends every other region — `APAC` included — to the
 > US host `public-api.drata.com`, where an APAC-tenant pipeline key is rejected
 > with "The api key is invalid or expired." This fork adds an `apac` branch
@@ -13,7 +13,21 @@
 > Upstream publishes no sources (only a prebuilt `dist/`, generated from a private
 > repo), so the patch is applied directly to the vendored `dist/index.js` bundle.
 >
-> Retire this fork as soon as upstream supports APAC natively.
+> **Change 2 - the findings actually get reported.** Upstream reads the
+> documented `verboseLogging` input into its config and then never uses it, so
+> findings are only ever visible in the Drata console - the build log gets bare
+> severity counts. This fork emits them three ways: per-finding lines in the
+> build log, a Markdown table on the workflow run summary, and a
+> `findingsMarkdown` step output a workflow can post as a PR comment. Critical
+> findings render expanded; every other severity is collapsed behind
+> `<details>`, and long sections are capped at 50 rows to stay under GitHub's
+> 65 KB comment limit.
+>
+> Note `publishResults` is now `async` (it awaits the summary write), and its
+> call site awaits it. That await matters: without it the `actionResult === false`
+> gate compares against a Promise and the action would stop failing on findings.
+>
+> Retire this fork as soon as upstream supports APAC natively and reports findings.
 >
 > Known remaining gap: the run permalink printed to the build log is still built
 > against `*.drata.com` and will be wrong for APAC tenants. Cosmetic only.

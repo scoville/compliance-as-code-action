@@ -34469,7 +34469,7 @@ async function run() {
         await action.prepare();
         const { pipelineId } = await action.queueValidation(pipelineInfo);
         let results = await action.checkIfResultsAreAvailable(config.configParams.timeoutSeconds, pipelineInfo.runId);
-        let actionResult = action.publishResults(config.configParams?.maxSeverity || "", results);
+        let actionResult = await action.publishResults(config.configParams?.maxSeverity || "", results);
         if (actionResult === false) {
             const platformUrl = action.buildPlatformLink(pipelineInfo.runId, pipelineId);
             if (platformUrl) {
@@ -34635,7 +34635,7 @@ class ActionService {
         }
         return response.results;
     }
-    publishResults(maxSeverity, results) {
+    async publishResults(maxSeverity, results) {
         let severityThreshold = 0;
         let severityMap = ["None", "Low", "Moderate", "High", "Critical"];
         if (maxSeverity.toLowerCase() == "critical") {
@@ -34667,11 +34667,62 @@ class ActionService {
         const colorCode = actionResult ? "32" : "31";
         core.info("------------------------------------------------------------------");
         core.info(` \u001B[${colorCode}mCritical: ${grouped["Critical"]?.length ?? 0} High: ${grouped["High"]?.length ?? 0} Moderate: ${grouped["Moderate"]?.length ?? 0} Low: ${grouped["Low"]?.length ?? 0} `);
+        if (this.configParams?.verboseLogging !== false) {
+            severityMap.slice().reverse().forEach((label) => {
+                (grouped[label] ?? []).forEach((gap) => {
+                    core.info(`  [${label}] ${gap.fileName}:${gap.lineNumber} - ${gap.description}`);
+                });
+            });
+        }
+        try {
+            const markdown = this.renderFindingsMarkdown(grouped, severityMap);
+            if (markdown.trim() !== "") {
+                core.setOutput("findingsMarkdown", markdown);
+                await core.summary.addRaw(markdown, true).write();
+            }
+        }
+        catch (error) {
+            core.warning(`Unable to publish findings summary: ${error}`);
+        }
         if (results.excludedFindings?.length > 0) {
             core.info(`${results.excludedFindings.length} issue(s) have been excluded from this run`);
         }
         core.info("------------------------------------------------------------------");
         return actionResult;
+    }
+    renderFindingsMarkdown(grouped, severityMap) {
+        const emoji = { Critical: "\u{1F534}", High: "\u{1F7E0}", Moderate: "\u{1F7E1}", Low: "\u{1F535}", None: "\u26AA" };
+        const ROW_CAP = 50;
+        const cell = (value) => String(value ?? "")
+            .replace(/\|/g, "\\|")
+            .replace(/\r?\n/g, " ")
+            .trim();
+        const lines = [];
+        severityMap.slice().reverse().forEach((label) => {
+            const gaps = grouped[label] ?? [];
+            if (gaps.length === 0) {
+                return;
+            }
+            const heading = `${emoji[label] ?? ""} ${label} (${gaps.length})`;
+            const collapsed = label !== "Critical";
+            lines.push(collapsed
+                ? `<details>\n<summary><b>${heading}</b></summary>\n`
+                : `### ${heading}\n`);
+            lines.push("| File | Finding | Fix |");
+            lines.push("| --- | --- | --- |");
+            gaps.slice(0, ROW_CAP).forEach((gap) => {
+                const where = `\`${cell(gap.fileName)}:${cell(gap.lineNumber)}\``;
+                const what = gap.documentationUrl
+                    ? `[${cell(gap.description)}](${cell(gap.documentationUrl)})`
+                    : cell(gap.description);
+                lines.push(`| ${where} | ${what} | ${cell(gap.fix)} |`);
+            });
+            if (gaps.length > ROW_CAP) {
+                lines.push(`\n_...and ${gaps.length - ROW_CAP} more ${label} finding(s); see the Drata console for the full list._`);
+            }
+            lines.push(collapsed ? "\n</details>\n" : "");
+        });
+        return lines.join("\n");
     }
     buildPlatformLink(runId, pipelineId) {
         if ((pipelineId ?? 0) === 0 || (runId ?? "") === "") {
