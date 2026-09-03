@@ -34704,10 +34704,7 @@ class ActionService {
                 return;
             }
             const heading = `${emoji[label] ?? ""} ${label} (${gaps.length})`;
-            const collapsed = label !== "Critical";
-            lines.push(collapsed
-                ? `<details>\n<summary><b>${heading}</b></summary>\n`
-                : `### ${heading}\n`);
+            lines.push(`<details>\n<summary><b>${heading}</b></summary>\n`);
             lines.push("| File | Finding | Fix |");
             lines.push("| --- | --- | --- |");
             gaps.slice(0, ROW_CAP).forEach((gap) => {
@@ -34720,7 +34717,7 @@ class ActionService {
             if (gaps.length > ROW_CAP) {
                 lines.push(`\n_...and ${gaps.length - ROW_CAP} more ${label} finding(s); see the Drata console for the full list._`);
             }
-            lines.push(collapsed ? "\n</details>\n" : "");
+            lines.push("\n</details>\n");
         });
         return lines.join("\n");
     }

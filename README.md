@@ -18,10 +18,9 @@
 > findings are only ever visible in the Drata console - the build log gets bare
 > severity counts. This fork emits them three ways: per-finding lines in the
 > build log, a Markdown table on the workflow run summary, and a
-> `findingsMarkdown` step output a workflow can post as a PR comment. Critical
-> findings render expanded; every other severity is collapsed behind
-> `<details>`, and long sections are capped at 50 rows to stay under GitHub's
-> 65 KB comment limit.
+> `findingsMarkdown` step output a workflow can post as a PR comment. Every
+> severity renders collapsed behind its own `<details>` block, and long sections
+> are capped at 50 rows to stay under GitHub's 65 KB comment limit.
 >
 > Note `publishResults` is now `async` (it awaits the summary write), and its
 > call site awaits it. That await matters: without it the `actionResult === false`
