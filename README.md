@@ -1,4 +1,22 @@
-# Drata Compliance as Code Action
+# Drata Compliance as Code Action (Scoville fork)
+
+> **Fork notice.** This is Scoville's fork of
+> [`drata/compliance-as-code-action`](https://github.com/drata/compliance-as-code-action),
+> forked at upstream `v1.0.1`.
+>
+> **Sole change:** support for `region: APAC`. Upstream's `buildApiUrl` maps only
+> `EU` to a dedicated host and sends every other region — `APAC` included — to the
+> US host `public-api.drata.com`, where an APAC-tenant pipeline key is rejected
+> with "The api key is invalid or expired." This fork adds an `apac` branch
+> returning `public-api.apac.drata.com`.
+>
+> Upstream publishes no sources (only a prebuilt `dist/`, generated from a private
+> repo), so the patch is applied directly to the vendored `dist/index.js` bundle.
+>
+> Retire this fork as soon as upstream supports APAC natively.
+>
+> Known remaining gap: the run permalink printed to the build log is still built
+> against `*.drata.com` and will be wrong for APAC tenants. Cosmetic only.
 
 Use the Drata Compliance as Code action to scan for infrastructure-as-code findings in your pipeline. By utilizing this
 GitHub action in your workflow, you can automatically start to find, fix and monitor for compliance related

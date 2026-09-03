@@ -34392,6 +34392,9 @@ class Api {
         if (region === "eu") {
             return `https://${environmentMap.get(environment)}.eu.drata.com`;
         }
+        if (region === "apac") {
+            return `https://${environmentMap.get(environment)}.apac.drata.com`;
+        }
         return `https://${environmentMap.get(environment)}.drata.com`;
     }
 }
